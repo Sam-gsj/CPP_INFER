@@ -67,7 +67,7 @@ ImageBatchSampler::SampleFromVector(const std::vector<std::string>& inputs) {
         return absl::NotFoundError("File not found: " + input);
       }
       input_path_.push_back(input);
-      absl::StatusOr<cv::Mat> image_result = Utility::LoadImage(input);
+      absl::StatusOr<cv::Mat> image_result = Utility::MyLoadImage(input);
       if (!image_result.ok()) {
         return image_result.status();
       }

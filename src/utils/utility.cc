@@ -227,7 +227,7 @@ void Utility::PrintShape(const cv::Mat& img) {
   std::cout << std::endl;
 }
 
-absl::Status Utility::CreateDirectory(const std::string& path) {
+absl::Status Utility::MyCreateDirectory(const std::string& path) {
 #ifdef _WIN32
   int ret = _mkdir(path.c_str());
 #else
@@ -242,7 +242,7 @@ absl::Status Utility::CreateDirectory(const std::string& path) {
   return absl::ErrnoToStatus(errno, "Failed to create directory: " + path);
 }
 
-absl::Status Utility::CreatePath(const std::string& path) {
+absl::Status Utility::MyCreatePath(const std::string& path) {
   std::vector<std::string> paths;
   std::string tmp;
   for (size_t i = 0; i < path.size(); ++i) {
@@ -256,7 +256,7 @@ absl::Status Utility::CreatePath(const std::string& path) {
   std::string current;
   for (size_t i = 0; i < paths.size(); ++i) {
     current += paths[i];
-    absl::Status status = CreateDirectory(current);
+    absl::Status status = MyCreateDirectory(current);
     if (!status.ok()) {
       return status;
     }
@@ -264,7 +264,7 @@ absl::Status Utility::CreatePath(const std::string& path) {
   return absl::OkStatus();
 }
 
-absl::Status Utility::CreateFile(const std::string& filepath) {
+absl::Status Utility::MyCreateFile(const std::string& filepath) {
   std::ifstream infile(filepath.c_str());
   if (infile.good()) {
     return absl::OkStatus();
@@ -362,7 +362,7 @@ bool Utility::IsImageFile(const std::string& file_path) {
   return kImgSuffixes.find(lower_ext) != kImgSuffixes.end();
 }
 
-absl::StatusOr<cv::Mat> Utility::LoadImage(const std::string& file_path) {
+absl::StatusOr<cv::Mat> Utility::MyLoadImage(const std::string& file_path) {
   cv::Mat image = cv::imread(file_path, cv::IMREAD_COLOR);
   if (image.empty()) {
     return absl::InvalidArgumentError("Failed to load image: " + file_path);

@@ -2,14 +2,14 @@
 // Copyright (c) 2025 PaddlePaddle
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
+// of this software && associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
+// to use, copy, modify, merge, publish, distribute, sublicense, &&/||  sell
+// copies of the Software, && to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
+// The above copyright notice && this permission notice shall be included in
+// all copies ||  substantial portions of the Software.
 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -270,14 +270,14 @@ bool mkdirs(const string& path) {
   char* dir_ptr = (char*)_path.c_str();
   char* iter_ptr = dir_ptr;
 
-  bool keep_going = *iter_ptr not_eq 0;
+  bool keep_going = *iter_ptr != 0;
   while (keep_going) {
     if (*iter_ptr == 0) keep_going = false;
 
 #ifdef U_OS_WINDOWS
-    if (*iter_ptr == '/' or *iter_ptr == '\\' or *iter_ptr == 0) {
+    if (*iter_ptr == '/' ||  *iter_ptr == '\\' ||  *iter_ptr == 0) {
 #else
-    if ((*iter_ptr == '/' and iter_ptr not_eq dir_ptr) or *iter_ptr == 0) {
+    if ((*iter_ptr == '/' && iter_ptr != dir_ptr) ||  *iter_ptr == 0) {
 #endif
       char old = *iter_ptr;
       *iter_ptr = 0;
@@ -433,7 +433,7 @@ static struct Logger {
       std::swap(local_, cache_);
     }
 
-    if (!local_.empty() and !logger_directory.empty()) {
+    if (!local_.empty() && !logger_directory.empty()) {
       auto now = date_now();
       auto file = format("%s%s.txt", logger_directory.c_str(), now.c_str());
       if (!exists(file)) {
@@ -472,14 +472,14 @@ static struct Logger {
     if (logger_directory.empty()) logger_directory = ".";
 
 #if defined(U_OS_LINUX)
-    if (logger_directory.back() not_eq '/') {
+    if (logger_directory.back() != '/') {
       logger_directory.push_back('/');
     }
 #endif
 
 #if defined(U_OS_WINDOWS)
-    if (logger_directory.back() not_eq '/' and
-        logger_directory.back() not_eq '\\') {
+    if (logger_directory.back() != '/' &&
+        logger_directory.back() != '\\') {
       logger_directory.push_back('/');
     }
 #endif
@@ -555,7 +555,7 @@ void __log_func(const char* file, int line, LogLevel level, const char* fmt,
   int n = snprintf(buffer, sizeof(buffer), "[%s]", now.c_str());
 
 #if defined(U_OS_WINDOWS)
-  if (level == LogLevel::Fatal or level == LogLevel::Error) {
+  if (level == LogLevel::Fatal ||  level == LogLevel::Error) {
     n += snprintf(buffer + n, sizeof(buffer) - n, "[%s]", level_string(level));
   } else if (level == LogLevel::Warning) {
     n += snprintf(buffer + n, sizeof(buffer) - n, "[%s]", level_string(level));
@@ -563,7 +563,7 @@ void __log_func(const char* file, int line, LogLevel level, const char* fmt,
     n += snprintf(buffer + n, sizeof(buffer) - n, "[%s]", level_string(level));
   }
 #elif defined(U_OS_LINUX)
-  if (level == LogLevel::Fatal or level == LogLevel::Error) {
+  if (level == LogLevel::Fatal ||  level == LogLevel::Error) {
     n += snprintf(buffer + n, sizeof(buffer) - n, "[\033[31m%s\033[0m]",
                   level_string(level));
   } else if (level == LogLevel::Warning) {
@@ -584,7 +584,7 @@ void __log_func(const char* file, int line, LogLevel level, const char* fmt,
                 line);
   vsnprintf(buffer + n, sizeof(buffer) - n, fmt, vl);
 
-  if (level == LogLevel::Fatal or level == LogLevel::Error) {
+  if (level == LogLevel::Fatal ||  level == LogLevel::Error) {
     fprintf(stderr, "%s\n", buffer);
   } else if (level == LogLevel::Warning) {
     fprintf(stdout, "%s\n", buffer);
@@ -647,8 +647,8 @@ std::vector<uint8_t> load_file(const string& file) {
 
 bool alphabet_equal(char a, char b, bool ignore_case) {
   if (ignore_case) {
-    a = a > 'a' and a < 'z' ? a - 'a' + 'A' : a;
-    b = b > 'a' and b < 'z' ? b - 'a' + 'A' : b;
+    a = a > 'a' && a < 'z' ? a - 'a' + 'A' : a;
+    b = b > 'a' && b < 'z' ? b - 'a' + 'A' : b;
   }
   return a == b;
 }
@@ -659,7 +659,7 @@ static bool pattern_match_body(const char* str, const char* matcher,
   //   abcdefg.png           *.png      > true
   //   abcdefg.png          a?cdefg.png > true
 
-  if (!matcher or !*matcher or !str or !*str) return false;
+  if (!matcher ||  !*matcher ||  !str ||  !*str) return false;
 
   const char* ptr_matcher = matcher;
   while (*str) {
@@ -683,7 +683,7 @@ static bool pattern_match_body(const char* str, const char* matcher,
   }
 
   while (*ptr_matcher) {
-    if (*ptr_matcher not_eq '*') return false;
+    if (*ptr_matcher != '*') return false;
     ptr_matcher++;
   }
   return true;
@@ -694,7 +694,7 @@ bool pattern_match(const char* str, const char* matcher, bool igrnoe_case) {
   //   abcdefg.png           *.png      > true
   //   abcdefg.png          a?cdefg.png > true
 
-  if (!matcher or !*matcher or !str or !*str) return false;
+  if (!matcher ||  !*matcher ||  !str ||  !*str) return false;
 
   char filter[500];
   strcpy(filter, matcher);
@@ -726,7 +726,7 @@ vector<string> find_files(const string& directory, const string& filter,
   if (realpath.empty()) realpath = "./";
 
   char backchar = realpath.back();
-  if (backchar not_eq '\\' and backchar not_eq '/') realpath += "/";
+  if (backchar != '\\' && backchar != '/') realpath += "/";
 
   vector<string> out;
   _WIN32_FIND_DATAA find_data;
@@ -738,23 +738,23 @@ vector<string> find_files(const string& directory, const string& filter,
     ps.pop();
 
     HANDLE hFind = FindFirstFileA((search_path + "*").c_str(), &find_data);
-    if (hFind not_eq INVALID_HANDLE_VALUE) {
+    if (hFind != INVALID_HANDLE_VALUE) {
       do {
-        if (strcmp(find_data.cFileName, ".") == 0 or
+        if (strcmp(find_data.cFileName, ".") == 0 || 
             strcmp(find_data.cFileName, "..") == 0)
           continue;
 
-        if (!findDirectory and
-                (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) not_eq
-                    FILE_ATTRIBUTE_DIRECTORY or
-            findDirectory and
+        if (!findDirectory &&
+                (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) !=
+                    FILE_ATTRIBUTE_DIRECTORY || 
+            findDirectory &&
                 (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ==
                     FILE_ATTRIBUTE_DIRECTORY) {
           if (PathMatchSpecA(find_data.cFileName, filter.c_str()))
             out.push_back(search_path + find_data.cFileName);
         }
 
-        if (includeSubDirectory and
+        if (includeSubDirectory &&
             (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ==
                 FILE_ATTRIBUTE_DIRECTORY)
           ps.push(search_path + find_data.cFileName + "/");
@@ -774,7 +774,7 @@ vector<string> find_files(const string& directory, const string& filter,
   if (realpath.empty()) realpath = "./";
 
   char backchar = realpath.back();
-  if (backchar not_eq '\\' and backchar not_eq '/') realpath += "/";
+  if (backchar != '\\' && backchar != '/') realpath += "/";
 
   struct dirent* fileinfo;
   DIR* handle;
@@ -787,23 +787,23 @@ vector<string> find_files(const string& directory, const string& filter,
     ps.pop();
 
     handle = opendir(search_path.c_str());
-    if (handle not_eq 0) {
+    if (handle != 0) {
       while (fileinfo = readdir(handle)) {
         struct stat file_stat;
-        if (strcmp(fileinfo->d_name, ".") == 0 or
+        if (strcmp(fileinfo->d_name, ".") == 0 || 
             strcmp(fileinfo->d_name, "..") == 0)
           continue;
 
         if (lstat((search_path + fileinfo->d_name).c_str(), &file_stat) < 0)
           continue;
 
-        if (!findDirectory and !S_ISDIR(file_stat.st_mode) or
-            findDirectory and S_ISDIR(file_stat.st_mode)) {
+        if (!findDirectory && !S_ISDIR(file_stat.st_mode) || 
+            findDirectory && S_ISDIR(file_stat.st_mode)) {
           if (pattern_match(fileinfo->d_name, filter.c_str()))
             out.push_back(search_path + fileinfo->d_name);
         }
 
-        if (includeSubDirectory and S_ISDIR(file_stat.st_mode))
+        if (includeSubDirectory && S_ISDIR(file_stat.st_mode))
           ps.push(search_path + fileinfo->d_name + "/");
       }
       closedir(handle);
@@ -833,7 +833,7 @@ vector<string> split_string(const string& str, const std::string& spstr) {
   int lent = spstr.length();
   const char* ptr = str.c_str();
 
-  while (p not_eq string::npos) {
+  while (p != string::npos) {
     int len = p - prev;
     if (len > 0) {
       res.emplace_back(str.substr(prev, len));
@@ -935,7 +935,7 @@ bool save_file(const string& file, const void* data, size_t length,
     int e = (int)file.rfind('\\');
     p = std::max(p, e);
 #endif
-    if (p not_eq -1) {
+    if (p != -1) {
       if (!mkdirs(file.substr(0, p))) return false;
     }
   }
@@ -943,8 +943,8 @@ bool save_file(const string& file, const void* data, size_t length,
   FILE* f = fopen(file.c_str(), "wb");
   if (!f) return false;
 
-  if (data and length > 0) {
-    if (fwrite(data, 1, length, f) not_eq length) {
+  if (data && length > 0) {
+    if (fwrite(data, 1, length, f) != length) {
       fclose(f);
       return false;
     }
@@ -1037,12 +1037,12 @@ string base64_decode(const string& base64) {
 
   char* dst = const_cast<char*>(out_data.data());
   char* orig_dst = dst;
-  while (len >= 4 and (a = from_b64(s[0])) not_eq 255 and
-         (b = from_b64(s[1])) not_eq 255 and (c = from_b64(s[2])) not_eq 255 and
-         (d = from_b64(s[3])) not_eq 255) {
+  while (len >= 4 && (a = from_b64(s[0])) != 255 &&
+         (b = from_b64(s[1])) != 255 && (c = from_b64(s[2])) != 255 &&
+         (d = from_b64(s[3])) != 255) {
     s += 4;
     len -= 4;
-    if (a == 200 or b == 200) break; /* '=' can't be there */
+    if (a == 200 ||  b == 200) break; /* '=' can't be there */
     *dst++ = a << 2 | b >> 4;
     if (c == 200) break;
     *dst++ = b << 4 | c >> 2;
@@ -1055,7 +1055,7 @@ string base64_decode(const string& base64) {
 
 string base64_encode(const void* data, size_t size) {
   string encode_result;
-  encode_result.reserve(size / 3 * 4 + (size % 3 not_eq 0 ? 4 : 0));
+  encode_result.reserve(size / 3 * 4 + (size % 3 != 0 ? 4 : 0));
 
   const unsigned char* current = static_cast<const unsigned char*>(data);
   static const char* base64_table =

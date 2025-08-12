@@ -230,7 +230,7 @@ std::vector<std::unique_ptr<BaseCVResult>> _DocPreprocessorPipeline::Predict(
 //    for(auto& batch_data : batches_string.value()){
 //         origin_image.reserve(batch_data.size());
 //         for (const auto& mat : batch_data) {
-//             origin_image.push_back(Utility::LoadImage(mat).value());
+//             origin_image.push_back(Utility::MyLoadImage(mat).value());
 //         }
 //         std::vector<int> angles = {};
 //         std::vector<cv::Mat> rotate_images ={};

@@ -66,12 +66,12 @@ class Utility {
                                    const std::string& filename);
   static void PrintShape(const cv::Mat& img);
 
-  static absl::Status CreateDirectory(const std::string& path);
-  static absl::Status CreatePath(const std::string& path);
-  static absl::Status CreateFile(const std::string& filepath);
+  static absl::Status MyCreateDirectory(const std::string& path);
+  static absl::Status MyCreatePath(const std::string& path);
+  static absl::Status MyCreateFile(const std::string& filepath);
   static absl::StatusOr<std::vector<cv::Mat>> SplitBatch(const cv::Mat& batch);
 
-  static absl::StatusOr<cv::Mat> LoadImage(const std::string& file_path);
+  static absl::StatusOr<cv::Mat> MyLoadImage(const std::string& file_path);
   static bool IsDirectory(const std::string& path);
   static std::string GetFileExtension(const std::string& file_path);
   static void GetFilesRecursive(const std::string& dir_path,
