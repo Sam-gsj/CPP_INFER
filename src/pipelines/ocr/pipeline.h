@@ -52,6 +52,7 @@ struct OCRPipelineResult {
   std::vector<int> textline_orientation_angles = {};
   std::vector<std::vector<cv::Point2f>> rec_polys = {};
   std::vector<std::array<float, 4>> rec_boxes = {};
+  std::string vis_fonts = "";
 };
 
 struct OCRPipelineParams {
@@ -59,20 +60,20 @@ struct OCRPipelineParams {
   std::string precision = "fp32";
   bool enable_mkldnn = false;
   std::unordered_map<std::string, std::string> config = {};
-  int textline_orientation_batch_size = 1;
-  int text_recognition_batch_size = 1;
-  bool use_doc_orientation_classify = true;
-  bool use_doc_unwarping = true;
-  bool use_textline_orientation = true;
-  int text_det_limit_side_len = 64;
-  std::string text_det_limit_type = "min";
-  float text_det_thresh = 0.3;
-  float text_det_box_thresh = 0.6;
-  float text_det_unclip_ratio = 2.0;
-  std::vector<int> text_det_input_shape = {};
-  float text_rec_score_thresh = 0.0;
-  std::vector<int> text_rec_input_shape = {};
-  std::string lang = "";
+  // int textline_orientation_batch_size = 1;
+  // int text_recognition_batch_size = 1;
+  // bool use_doc_orientation_classify = true;
+  // bool use_doc_unwarping = true;
+  // bool use_textline_orientation = true;
+  // int text_det_limit_side_len = 64;
+  // std::string text_det_limit_type = "min";
+  // float text_det_thresh = 0.3;
+  // float text_det_box_thresh = 0.6;
+  // float text_det_unclip_ratio = 2.0;
+  // std::vector<int> text_det_input_shape = {};
+  // float text_rec_score_thresh = 0.0;
+  // std::vector<int> text_rec_input_shape = {};
+  // std::string lang = "";
 };
 
 class _OCRPipeline : public BasePipeline {
@@ -95,6 +96,8 @@ class _OCRPipeline : public BasePipeline {
 
   std::unordered_map<std::string, bool> GetModelSettings() const;
   TextDetParams GetTextDetParams() const { return text_det_params_; };
+
+  void OverrideConfig();
 
  private:
   OCRPipelineParams params_;

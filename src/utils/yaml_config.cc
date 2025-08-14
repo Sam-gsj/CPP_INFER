@@ -384,11 +384,11 @@ VectorVariant YamlConfig::SmartParseVector(const std::string& input) {
   return result;
 }
 
-bool YamlConfig::FindKey(const std::string& key) {
+absl::StatusOr<std::pair<std::string,std::string>>  YamlConfig::FindKey(const std::string& key) {
   for (const auto& info : data_) {
     if (info.first.find(key) != std::string::npos) {
-      return true;
+      return info;
     }
   }
-  return false;
+  return absl::NotFoundError("Could find key "+ key);
 }

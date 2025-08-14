@@ -14,8 +14,9 @@
 
 #pragma once
 
+#ifdef USE_FREETYPE
 #include <opencv2/freetype.hpp>
-
+#endif
 #include "pipeline.h"
 #include "src/base/base_cv_result.h"
 
@@ -27,14 +28,18 @@ class OCRResult : public BaseCVResult {
   void SaveToImg(const std::string& save_path) override;
   void Print() const override;
   void SaveToJson(const std::string& save_path) const override;
+
+#ifdef USE_FREETYPE
   static cv::Mat DrawBoxTextFine(const cv::Size& img_ize,
                                  const std::vector<cv::Point2f>& box,
-                                 const std::string& txt);
+                                 const std::string& txt,
+                                 const std::string& vis_font);
 
   static void DrawVerticalText(cv::Ptr<cv::freetype::FreeType2>& ft2,
                                cv::Mat& img, const std::string& text, int x,
                                int y, int font_height, cv::Scalar color,
                                int line_spacing = 2);
+#endif
   static std::vector<cv::Point> GetMinareaRect(
       const std::vector<cv::Point>& points);
 

@@ -62,7 +62,7 @@ void ClasPredictor::Build() {
   if (!status.ok()) {
     INFOE("build resize_op fail: %s", status.ToString().c_str());
   }
-  if (config_.FindKey("Crop")) {
+  if (config_.FindKey("Crop").ok()) {
     Register<Crop>("Crop",
                    YamlConfig::SmartParseVector(pre_params.at("CropImage.size"))
                        .vec_int);  //*************
@@ -104,7 +104,7 @@ std::vector<std::unique_ptr<BaseCVResult>> ClasPredictor::Process(
   if (!batch_resize.ok()) {
     INFOE(batch_resize.status().ToString().c_str());
   }
-  if (config_.FindKey("Crop")) {
+  if (config_.FindKey("Crop").ok()) {
     batch_resize = pre_op_.at("Crop")->Apply(batch_resize.value());  // **
     if (!batch_resize.ok()) {
       INFOE(batch_resize.status().ToString().c_str());

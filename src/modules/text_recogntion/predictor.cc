@@ -14,9 +14,10 @@
 
 #include "predictor.h"
 
+#include <algorithm>
+
 #include "result.h"
 #include "src/common/image_batch_sampler.h"
-
 TextRecPredictor::TextRecPredictor(
     const std::string& model_dir, const std::string& device,
     const std::string& precision, const bool enable_mkldnn, int batch_size,
@@ -32,6 +33,11 @@ TextRecPredictor::TextRecPredictor(const std::string& model_dir,
                     params.enable_mkldnn, params.batch_size, params.config,
                     "image"),
       params_(params) {
+  auto status = CheckRecModelParams();
+  if (!status.ok()) {
+    INFOE("Rec model params is invaild : %s", status.ToString().c_str());
+    std::exit(-1);
+  }
   Build();
 };
 
@@ -92,11 +98,51 @@ std::vector<std::unique_ptr<BaseCVResult>> TextRecPredictor::Process(
     predictor_result.input_image = origin_image[i];
     predictor_result.rec_text = ctc_result.value()[i].first;
     predictor_result.rec_score = ctc_result.value()[i].second;
-    predictor_result.vis_font =
-        "/workspace/cpp_infer_refactor/models/PP-OCRv5_server_rec/simfang.ttf";
+    predictor_result.vis_font = params_.vis_font_dir;
     predictor_result_vec_.push_back(predictor_result);
     base_cv_result_ptr_vec.push_back(
         std::unique_ptr<BaseCVResult>(new TextRecResult(predictor_result)));
   }
   return base_cv_result_ptr_vec;
+}
+
+absl::Status TextRecPredictor::CheckRecModelParams() {
+  auto result_models_check =
+      Utility::GetOcrModelInfo(params_.lang, params_.ocr_version);
+  if (!result_models_check.ok()) {
+    return absl::InvalidArgumentError("lang and ocr_version is invaild : " +
+                                      result_models_check.status().ToString());
+  }
+  auto result_model_name = ModelName();
+  if (!result_model_name.ok()) {
+    INFOE("Get model name fail : %s",
+          result_model_name.status().ToString().c_str());
+  }
+  size_t pos_model_name = result_model_name.value().find('_');
+  size_t pos_model_check = std::get<1>(result_models_check.value()).find('_');
+  std::string prefix_model_name =
+      result_model_name.value().substr(0, pos_model_name);
+  std::string prefix_model_check =
+      std::get<1>(result_models_check.value()).substr(0, pos_model_check);
+  auto result = Utility::GetOcrModelInfo(params_.lang, prefix_model_name);
+  if (!result.ok()) {
+    return absl::InternalError("Model and lang do not match : " +
+                               result.status().ToString());
+  }
+  if (!params_.ocr_version.empty()) {
+    if (prefix_model_name != params_.ocr_version) {
+      INFOW("Rec model ocr_version and ocr_verision params do not match");
+    }
+  } else if (prefix_model_name != prefix_model_check) {
+    INFOW("Recommended ocr_version : %s", prefix_model_check);
+  }
+
+#ifdef USE_FREETYPE
+  if (params_.vis_font_dir.empty()) {
+    return absl::InvalidArgumentError(
+        "Visualization font path is empty, please provide " +
+        std::get<2>(result_models_check.value()) + " path.");
+  }
+#endif
+  return absl::OkStatus();
 }

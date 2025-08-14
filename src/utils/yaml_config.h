@@ -63,11 +63,11 @@ class YamlConfig {
   absl::Status PrintWithPrefix(const std::string& prefix) const;
   absl::Status FindPreProcessOp(
       const std::string& prefix = "PreProcess.transform_ops[0]") const;
-  std::unordered_map<std::string, std::string> Data() { return data_; };
+  std::unordered_map<std::string, std::string>& Data() { return data_; };
   std::string ConfigYamlPath() { return config_yaml_path_; };
   absl::Status GetConfigYamlPaths(const std::string& model_dir);
   absl::Status LoadYamlFile();
-  bool FindKey(const std::string& key);
+  absl::StatusOr<std::pair<std::string,std::string>> FindKey(const std::string& key);
   static VectorVariant SmartParseVector(const std::string& input);
 
  private:

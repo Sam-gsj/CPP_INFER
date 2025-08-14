@@ -385,12 +385,17 @@ absl::Status Utility::CreateDirectoryRecursive(const std::string& path) {
 
   size_t pos = 0;
   std::string dir = path;
-
+  #ifdef _WIN32
+    #define ACCESS _access
+    #define F_OK 0
+  #else
+    #define ACCESS access
+  #endif
   while (pos < dir.size()) {
     pos = dir.find_first_of(PATH_SEPARATOR, pos + 1);
     std::string subdir = (pos == std::string::npos) ? dir : dir.substr(0, pos);
 
-    if (!subdir.empty() && access(subdir.c_str(), F_OK) != 0) {
+    if (!subdir.empty() && ACCESS(subdir.c_str(), F_OK) != 0) {
       if (MakeDir(subdir) != 0) {
         return absl::InternalError("Failed to create directory: " + subdir);
       }
@@ -467,112 +472,178 @@ absl::StatusOr<int> Utility::StringToInt(std::string s) {
   }
 }
 
+absl::StatusOr<std::tuple<std::string, std::string, std::string>>
+Utility::GetOcrModelInfo(std::string lang, std::string ppocr_version) {
+  // Font constants
+  const static std::string PINGFANG_FONT = "PingFang-SC-Regular.ttf";
+  const static std::string SIMFANG_FONT = "simfang.ttf";
+  const static std::string LATIN_FONT = "latin.ttf";
+  const static std::string KOREAN_FONT = "korean.ttf";
+  const static std::string ARABIC_FONT = "arabic.ttf";
+  const static std::string CYRILLIC_FONT = "cyrillic.ttf";
+  const static std::string KANNADA_FONT = "kannada.ttf";
+  const static std::string TELUGU_FONT = "telugu.ttf";
+  const static std::string TAMIL_FONT = "tamil.ttf";
+  const static std::string DEVANAGARI_FONT = "devanagari.ttf";
 
-absl::StatusOr<std::pair<std::string, std::string>> Utility::GetOcrModelNames(std::string lang,std::string ppocr_version){
-    const static std::unordered_set<std::string> SUPPORT_PPOCR_VERSION = {"PP-OCRv5","PP-OCRv4","PP-OCRv3"};
-    if(!ppocr_version.empty()){
-      if (SUPPORT_PPOCR_VERSION.count(lang) == 0) {
-        return absl::InvalidArgumentError("Unsupported ppocr_version: " + ppocr_version);
+  // Supported PP-OCR versions
+  const static std::unordered_set<std::string> SUPPORT_PPOCR_VERSION = {
+      "PP-OCRv5", "PP-OCRv4", "PP-OCRv3"};
+
+  // Language sets
+  const static std::unordered_set<std::string> LATIN_LANGS = {
+      "af", "az", "bs", "cs",       "cy",     "da",    "de", "es", "et",
+      "fr", "ga", "hr", "hu",       "id",     "is",    "it", "ku", "la",
+      "lt", "lv", "mi", "ms",       "mt",     "nl",    "no", "oc", "pi",
+      "pl", "pt", "ro", "rs_latin", "sk",     "sl",    "sq", "sv", "sw",
+      "tl", "tr", "uz", "vi",       "french", "german"};
+
+  const static std::unordered_set<std::string> ARABIC_LANGS = {"ar", "fa", "ug",
+                                                               "ur"};
+  const static std::unordered_set<std::string> ESLAV_LANGS = {"ru", "be", "uk"};
+  const static std::unordered_set<std::string> CYRILLIC_LANGS = {
+      "ru",  "rs_cyrillic", "be",  "bg",  "uk",  "mn",  "abq", "ady",
+      "kbd", "ava",         "dar", "inh", "che", "lbe", "lez", "tab"};
+  const static std::unordered_set<std::string> DEVANAGARI_LANGS = {
+      "hi",  "mr",  "ne",  "bh",  "mai", "ang", "bho",
+      "mah", "sck", "new", "gom", "sa",  "bgc"};
+  const static std::unordered_set<std::string> SPECIFIC_LANGS = {
+      "ch", "en", "korean", "japan", "chinese_cht", "te", "ka", "ta"};
+
+  // Validate input parameters
+  if (!ppocr_version.empty() &&
+      SUPPORT_PPOCR_VERSION.count(ppocr_version) == 0) {
+    return absl::InvalidArgumentError("Unsupported ppocr_version: " +
+                                      ppocr_version);
+  }
+
+  if (lang.empty()) lang = "ch";
+
+  // Create combined supported languages set
+  const static std::unordered_set<std::string> supported_langs = []() {
+    std::unordered_set<std::string> s;
+    s.insert(LATIN_LANGS.begin(), LATIN_LANGS.end());
+    s.insert(ARABIC_LANGS.begin(), ARABIC_LANGS.end());
+    s.insert(ESLAV_LANGS.begin(), ESLAV_LANGS.end());
+    s.insert(CYRILLIC_LANGS.begin(), CYRILLIC_LANGS.end());
+    s.insert(DEVANAGARI_LANGS.begin(), DEVANAGARI_LANGS.end());
+    s.insert(SPECIFIC_LANGS.begin(), SPECIFIC_LANGS.end());
+    s.insert("ch");
+    return s;
+  }();
+
+  if (supported_langs.count(lang) == 0) {
+    return absl::InvalidArgumentError("Unsupported lang: " + lang);
+  }
+
+  // Determine default ppocr_version if not specified
+  if (ppocr_version.empty()) {
+    std::unordered_set<std::string> v5_langs = {"ch", "chinese_cht", "en",
+                                                "japan", "korean"};
+    v5_langs.insert(LATIN_LANGS.begin(), LATIN_LANGS.end());
+    v5_langs.insert(ESLAV_LANGS.begin(), ESLAV_LANGS.end());
+
+    if (v5_langs.count(lang)) {
+      ppocr_version = "PP-OCRv5";
+    } else {
+      std::unordered_set<std::string> v3_langs = LATIN_LANGS;
+      v3_langs.insert(ARABIC_LANGS.begin(), ARABIC_LANGS.end());
+      v3_langs.insert(CYRILLIC_LANGS.begin(), CYRILLIC_LANGS.end());
+      v3_langs.insert(DEVANAGARI_LANGS.begin(), DEVANAGARI_LANGS.end());
+      v3_langs.insert(SPECIFIC_LANGS.begin(), SPECIFIC_LANGS.end());
+
+      if (v3_langs.count(lang)) {
+        ppocr_version = "PP-OCRv3";
+      } else {
+        return absl::InvalidArgumentError(
+            "Invalid lang and ocr_version combination!");
       }
     }
-    const static std::unordered_set<std::string> LATIN_LANGS = {
-              "af", "az", "bs", "cs", "cy", "da", "de", "es", "et", "fr", "ga", "hr", "hu", "id", "is", "it", "ku", "la",
-              "lt", "lv", "mi", "ms", "mt", "nl", "no", "oc", "pi", "pl", "pt", "ro", "rs_latin", "sk", "sl", "sq", "sv",
-              "sw", "tl", "tr", "uz", "vi", "french", "german"
-    };
-    const static std::unordered_set<std::string> ARABIC_LANGS = {"ar", "fa", "ug", "ur"};
-    const static std::unordered_set<std::string> ESLAV_LANGS = {"ru", "be", "uk"};
-    const static std::unordered_set<std::string> CYRILLIC_LANGS = {
-        "ru", "rs_cyrillic", "be", "bg", "uk", "mn", "abq", "ady", "kbd", "ava", "dar", "inh",
-        "che", "lbe", "lez", "tab"
-    };
-    const static std::unordered_set<std::string> DEVANAGARI_LANGS = {
-        "hi", "mr", "ne", "bh", "mai", "ang", "bho", "mah", "sck", "new", "gom", "sa", "bgc"
-    };
-    const static std::unordered_set<std::string> SPECIFIC_LANGS = {
-        "ch", "en", "korean", "japan", "chinese_cht", "te", "ka", "ta"
-    };
+  }
 
-    if (lang.empty()) lang = "ch";
+  // Initialize return values
+  std::string det_model_name;
+  std::string rec_model_name;
+  std::string font_name = SIMFANG_FONT;  // Default font
 
-    const static std::unordered_set<std::string> supported_langs = []() {
-        std::unordered_set<std::string> s;
-        s.insert(LATIN_LANGS.begin(), LATIN_LANGS.end());
-        s.insert(ARABIC_LANGS.begin(), ARABIC_LANGS.end());
-        s.insert(ESLAV_LANGS.begin(), ESLAV_LANGS.end());
-        s.insert(CYRILLIC_LANGS.begin(), CYRILLIC_LANGS.end());
-        s.insert(DEVANAGARI_LANGS.begin(), DEVANAGARI_LANGS.end());
-        s.insert(SPECIFIC_LANGS.begin(), SPECIFIC_LANGS.end());
-        s.insert("ch"); 
-        return s;
-    }();
-    if (supported_langs.count(lang) == 0) {
-      return absl::InvalidArgumentError("Unsupported lang: " + lang);
-    }
-    if (ppocr_version.empty()) {
-        std::unordered_set<std::string> v5_langs = {"ch", "chinese_cht", "en", "japan", "korean"};
-        v5_langs.insert(LATIN_LANGS.begin(), LATIN_LANGS.end());
-        v5_langs.insert(ESLAV_LANGS.begin(), ESLAV_LANGS.end());
-        if (v5_langs.count(lang)) {
-            ppocr_version = "PP-OCRv5";
-        } else {
-            std::unordered_set<std::string> v3_langs = LATIN_LANGS;
-            v3_langs.insert(ARABIC_LANGS.begin(), ARABIC_LANGS.end());
-            v3_langs.insert(CYRILLIC_LANGS.begin(), CYRILLIC_LANGS.end());
-            v3_langs.insert(DEVANAGARI_LANGS.begin(), DEVANAGARI_LANGS.end());
-            v3_langs.insert(SPECIFIC_LANGS.begin(), SPECIFIC_LANGS.end());
-            if (v3_langs.count(lang)) {
-                ppocr_version = "PP-OCRv3";
-            } else {
-                return absl::InvalidArgumentError("Invaild lang and ocr_version !");
-            }
-        }
+  // Model and font selection logic
+  if (ppocr_version == "PP-OCRv5") {
+    det_model_name = "PP-OCRv5_server_det";
+    std::string rec_lang;
+
+    if (lang == "ch" || lang == "chinese_cht" || lang == "en" ||
+        lang == "japan") {
+      rec_model_name = "PP-OCRv5_server_rec";
+      font_name = SIMFANG_FONT;
+    } else if (LATIN_LANGS.count(lang)) {
+      rec_lang = "latin";
+      font_name = LATIN_FONT;
+    } else if (ESLAV_LANGS.count(lang)) {
+      rec_lang = "eslav";
+      font_name = CYRILLIC_FONT;
+    } else if (lang == "korean") {
+      rec_lang = "korean";
+      font_name = KOREAN_FONT;
     }
 
-    if (ppocr_version == "PP-OCRv5") {
-        std::string rec_lang, rec_model_name;
-        if (lang == "ch" || lang == "chinese_cht" || lang == "en" || lang == "japan") {
-            rec_model_name = "PP-OCRv5_server_rec";
-        } else if (LATIN_LANGS.count(lang)) {
-            rec_lang = "latin";
-        } else if (ESLAV_LANGS.count(lang)) {
-            rec_lang = "eslav";
-        } else if (lang == "korean") {
-            rec_lang = "korean";
-        }
-        if (!rec_lang.empty()) {
-            rec_model_name = rec_lang + "_PP-OCRv5_mobile_rec";
-        }
-        return std::pair<std::string, std::string>{"PP-OCRv5_server_det", rec_model_name};
+    if (!rec_lang.empty()) {
+      rec_model_name = rec_lang + "_PP-OCRv5_mobile_rec";
     }
-    else if (ppocr_version == "PP-OCRv4") {
-        if (lang == "ch") return std::pair<std::string, std::string>{"PP-OCRv4_mobile_det", "PP-OCRv4_mobile_rec"};
-        else if (lang == "en") return std::pair<std::string, std::string>{"PP-OCRv4_mobile_det", "en_PP-OCRv4_mobile_rec"};
-        else return absl::InvalidArgumentError("PP-OCRv4 only support ch and en languages !");
+  } else if (ppocr_version == "PP-OCRv4") {
+    if (lang == "ch") {
+      det_model_name = "PP-OCRv4_mobile_det";
+      rec_model_name = "PP-OCRv4_mobile_rec";
+      font_name = SIMFANG_FONT;
+    } else if (lang == "en") {
+      det_model_name = "PP-OCRv4_mobile_det";
+      rec_model_name = "en_PP-OCRv4_mobile_rec";
+      font_name = SIMFANG_FONT;
+    } else {
+      return absl::InvalidArgumentError(
+          "PP-OCRv4 only support ch and en languages!");
     }
-    else {
-        std::string rec_lang;
-        if (LATIN_LANGS.count(lang)) rec_lang = "latin";
-        else if (ARABIC_LANGS.count(lang)) rec_lang = "arabic";
-        else if (CYRILLIC_LANGS.count(lang)) rec_lang = "cyrillic";
-        else if (DEVANAGARI_LANGS.count(lang)) rec_lang = "devanagari";
-        else if (SPECIFIC_LANGS.count(lang)) rec_lang = lang;
+  } else {  // PP-OCRv3
+    det_model_name = "PP-OCRv3_mobile_det";
+    std::string rec_lang;
 
-        std::string rec_model_name;
-        if (rec_lang == "ch")
-            rec_model_name = "PP-OCRv3_mobile_rec";
-        else if (!rec_lang.empty())
-            rec_model_name = rec_lang + "_PP-OCRv3_mobile_rec";
-
-        return std::pair<std::string, std::string>{"PP-OCRv3_mobile_det", rec_model_name};
+    if (LATIN_LANGS.count(lang)) {
+      rec_lang = "latin";
+      font_name = LATIN_FONT;
+    } else if (ARABIC_LANGS.count(lang)) {
+      rec_lang = "arabic";
+      font_name = ARABIC_FONT;
+    } else if (CYRILLIC_LANGS.count(lang)) {
+      rec_lang = "cyrillic";
+      font_name = CYRILLIC_FONT;
+    } else if (DEVANAGARI_LANGS.count(lang)) {
+      rec_lang = "devanagari";
+      font_name = DEVANAGARI_FONT;
+    } else if (SPECIFIC_LANGS.count(lang)) {
+      rec_lang = lang;
+      if (lang == "ka") {
+        font_name = KANNADA_FONT;
+      } else if (lang == "te") {
+        font_name = TELUGU_FONT;
+      } else if (lang == "ta") {
+        font_name = TAMIL_FONT;
+      } else if (lang == "ch") {
+        font_name = SIMFANG_FONT;
+      }
     }
-    return absl::InvalidArgumentError("Invaild lang and ocr_version !");
+
+    if (rec_lang == "ch") {
+      rec_model_name = "PP-OCRv3_mobile_rec";
+    } else if (!rec_lang.empty()) {
+      rec_model_name = rec_lang + "_PP-OCRv3_mobile_rec";
+    }
+  }
+
+  if (rec_model_name.empty()) {
+    return absl::InvalidArgumentError(
+        "Invalid lang and ocr_version combination!");
+  }
+
+  return std::make_tuple(det_model_name, rec_model_name, font_name);
 }
-
-
-
-
-
-
 const std::set<std::string> Utility::kImgSuffixes = {"jpg", "png", "jpeg",
                                                      "bmp"};

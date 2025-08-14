@@ -23,9 +23,9 @@
 struct TextRecPredictorResult {
   std::string input_path = "";
   cv::Mat input_image;
-  std::string rec_text;
-  float rec_score;
-  std::string vis_font;
+  std::string rec_text ="";
+  float rec_score = 0.0;
+  std::string vis_font = "";
 };
 
 struct TextRecPredictorParams {
@@ -34,6 +34,10 @@ struct TextRecPredictorParams {
   bool enable_mkldnn = false;
   int batch_size = 1;
   std::unordered_map<std::string, std::string> config = {};
+  std::string lang = "";
+  std::string ocr_version = "";
+  std::string vis_font_dir =
+      "/workspace/cpp_infer_refactor/models/PP-OCRv5_server_rec/simfang.ttf";
 };
 
 class TextRecPredictor : public BasePredictor {
@@ -57,10 +61,12 @@ class TextRecPredictor : public BasePredictor {
   std::vector<std::unique_ptr<BaseCVResult>> Process(
       std::vector<cv::Mat> &batch_data) override;
 
+  absl::Status CheckRecModelParams();
+
  private:
   std::unordered_map<std::string, std::unique_ptr<CTCLabelDecode>> post_op_;
   std::vector<TextRecPredictorResult> predictor_result_vec_;
   std::unique_ptr<PaddleInfer> infer_ptr_;
   TextRecPredictorParams params_;
-  int input_index_;
+  int input_index_ = 0;
 };

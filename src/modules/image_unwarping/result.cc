@@ -22,10 +22,22 @@
 
 using json = nlohmann::json;
 void DocTrResult::SaveToImg(const std::string& save_path) {
-  auto full_path = Utility::SmartCreateDirectoryForImage(
-      save_path, predictor_result_.input_path);
-  if (!full_path.ok()) {
-    INFOE(full_path.status().ToString().c_str());
+  absl::StatusOr<std::string> full_path;
+  if (predictor_result_.input_path.empty()) {
+    auto now = std::chrono::system_clock::now();
+    auto now_time = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << "output_" << std::put_time(std::localtime(&now_time), "%Y%m%d_%H%M%S")
+       << ".jpg";
+    std::string timestamp_filename = ss.str();
+    INFOW("Input path is empty, will use %s instead!",
+          timestamp_filename.c_str());
+    predictor_result_.input_path = timestamp_filename;
+    full_path =
+        Utility::SmartCreateDirectoryForImage(save_path, timestamp_filename);
+  } else {
+    full_path = Utility::SmartCreateDirectoryForImage(
+        save_path, predictor_result_.input_path);
   }
   bool success = cv::imwrite(full_path.value(), predictor_result_.doctr_img);
   if (!success) {
@@ -62,14 +74,9 @@ void DocTrResult::SaveToJson(const std::string& save_path) const {
   }
   j["doctr_img"] = mat_array;
 
-  absl::StatusOr<std::string> full_path;
-  if (predictor_result_.input_path.empty()) {
-    INFOW("Input path is empty, will use output.jpg instead!");
-    full_path = Utility::SmartCreateDirectoryForImage(save_path, "output.jpg");
-  } else {
-    full_path = Utility::SmartCreateDirectoryForImage(
-        save_path, predictor_result_.input_path);
-  }
+  auto full_path = Utility::SmartCreateDirectoryForJson(
+      save_path, predictor_result_.input_path);
+
   if (!full_path.ok()) {
     INFOE(full_path.status().ToString().c_str());
   }

@@ -81,19 +81,22 @@ void OCRResult::SaveToImg(const std::string& save_path) {
     } else {
       cv::fillPoly(img_left, std::vector<std::vector<cv::Point>>{box}, color);
     }
-
-    cv::Mat img_right_text = DrawBoxTextFine(
-        cv::Size(w, h), box_float, text);  // Placeholder for drawing text
+#ifdef USE_FREETYPE
+    cv::Mat img_right_text = DrawBoxTextFine(cv::Size(w, h), box_float, text,
+                                             pipeline_result_.vis_fonts);
     cv::polylines(img_right_text, box, true, color, 1);
     cv::bitwise_and(img_right, img_right_text, img_right);
+#endif
   }
-
   cv::Mat blended;
   cv::addWeighted(image, 0.5, img_left, 0.5, 0, blended);
-
+#ifdef USE_FREETYPE
   cv::Mat ocr_res_image(h, w * 2, CV_8UC3, cv::Scalar(255, 255, 255));
   blended.copyTo(ocr_res_image(cv::Rect(0, 0, w, h)));
   img_right.copyTo(ocr_res_image(cv::Rect(w, 0, w, h)));
+#else
+  cv::Mat ocr_res_image = blended;
+#endif
 
   auto model_settings = pipeline_result_.model_settings;
   std::unordered_map<std::string, cv::Mat> res_img_dict;
@@ -134,15 +137,15 @@ void OCRResult::SaveToImg(const std::string& save_path) {
   }
 }
 
+#ifdef USE_FREETYPE
 cv::Mat OCRResult::DrawBoxTextFine(const cv::Size& img_size,
                                    const std::vector<cv::Point2f>& box,
-                                   const std::string& txt) {
+                                   const std::string& txt,
+                                   const std::string& vis_font) {
   int box_height = cv::norm(box[0] - box[3]);
   int box_width = cv::norm(box[0] - box[1]);
   auto ft2 = cv::freetype::createFreeType2();
-  ft2->loadFontData(
-      "/workspace/cpp_infer_refactor/models/PP-OCRv5_server_rec/simfang.ttf",
-      0);
+  ft2->loadFontData(vis_font, 0);
 
   bool vertical_mode = box_height > 2 * box_width && box_height > 30;
   int n = std::max(int(txt.size()), 1);
@@ -194,6 +197,7 @@ void OCRResult::DrawVerticalText(cv::Ptr<cv::freetype::FreeType2>& ft2,
     y += size.height + line_spacing;
   }
 }
+#endif
 
 std::vector<cv::Point> OCRResult::GetMinareaRect(
     const std::vector<cv::Point>& points) {
@@ -328,4 +332,5 @@ void OCRResult::SaveToJson(const std::string& save_path) const {
     INFOE("Could not open file for writing: %s", save_path.c_str());
   }
 }
-void OCRResult::Print() const { int a = 1; }
+
+void OCRResult::Print() const { int a = 1; }  //*********

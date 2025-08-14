@@ -16,12 +16,12 @@
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <polyclipping/clipper.hpp>
 #include <string>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "polyclipping/clipper.hpp"
 #include "src/utils/func_register.h"
 
 class Resize : public BaseProcessor {

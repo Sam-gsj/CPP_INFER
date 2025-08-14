@@ -15,20 +15,24 @@
 #include "result.h"
 
 #include <fstream>
+
+#ifdef USE_FREETYPE
 #include <opencv2/freetype.hpp>
+#endif
 #include <string>
 
 #include "src/utils/utility.h"
 #include "third_party/nlohmann/json.hpp"
 
 using json = nlohmann::json;
+
+#ifdef USE_FREETYPE
 void TextRecResult::SaveToImg(const std::string& save_path) {
   int image_width = predictor_result_.input_image.size[1];
   int image_height = predictor_result_.input_image.size[0];
-  std::string text = predictor_result_.rec_text + "（" +
-                     std::to_string(predictor_result_.rec_score) + "）";
+  std::string text = predictor_result_.rec_text + "(" +
+                     std::to_string(predictor_result_.rec_score) + ")";
   int font = AdjustFontSize(image_width, text);
-  font = 26;
   cv::Ptr<cv::freetype::FreeType2> ft2 = cv::freetype::createFreeType2();
   ft2->loadFontData(predictor_result_.vis_font, 0);
   int baseline = 0;
@@ -45,8 +49,17 @@ void TextRecResult::SaveToImg(const std::string& save_path) {
 
   absl::StatusOr<std::string> full_path;
   if (predictor_result_.input_path.empty()) {
-    INFOW("Input path is empty, will use output.jpg instead!");
-    full_path = Utility::SmartCreateDirectoryForImage(save_path, "output.jpg");
+    auto now = std::chrono::system_clock::now();
+    auto now_time = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << "output_" << std::put_time(std::localtime(&now_time), "%Y%m%d_%H%M%S")
+       << ".jpg";
+    std::string timestamp_filename = ss.str();
+    INFOW("Input path is empty, will use %s instead!",
+          timestamp_filename.c_str());
+    predictor_result_.input_path = timestamp_filename;
+    full_path =
+        Utility::SmartCreateDirectoryForImage(save_path, timestamp_filename);
   } else {
     full_path = Utility::SmartCreateDirectoryForImage(
         save_path, predictor_result_.input_path);
@@ -59,42 +72,6 @@ void TextRecResult::SaveToImg(const std::string& save_path) {
     INFOE("Error: Failed to write the image :%s ", full_path.value().c_str());
   }
 }
-
-void TextRecResult::Print() const {
-  std::cout << "{\n  \"res\": {" << std::endl;
-
-  std::cout << "    \"input_path\": {" << predictor_result_.input_path << " },"
-            << std::endl;
-  std::cout << "    \"rec_text\": {" << predictor_result_.rec_text << " }"
-            << std::endl;
-  std::cout << "    \"rec_score\": {" << predictor_result_.rec_score << " }"
-            << std::endl;
-  std::cout << "}" << std::endl;
-}
-
-void TextRecResult::SaveToJson(const std::string& save_path) const {
-  nlohmann::ordered_json j;
-
-  j["input_path"] = predictor_result_.input_path;
-  j["page_index"] = nullptr;  //********
-
-  j["rec_text"] = predictor_result_.rec_text;
-  j["rec_score"] = predictor_result_.rec_score;
-
-  auto full_path = Utility::SmartCreateDirectoryForJson(
-      save_path, predictor_result_.input_path);
-  if (!full_path.ok()) {
-    INFOE(full_path.status().ToString().c_str());
-  }
-  std::ofstream file(full_path.value());
-  if (file.is_open()) {
-    file << j.dump(4);
-    file.close();
-  } else {
-    INFOE("Could not open file for writing: %s", save_path.c_str());
-  }
-}
-
 int TextRecResult::AdjustFontSize(int image_width,
                                   const std::string& text) const {
   cv::Ptr<cv::freetype::FreeType2> ft2 = cv::freetype::createFreeType2();
@@ -112,4 +89,45 @@ int TextRecResult::AdjustFontSize(int image_width,
   } while (font_size > 0);
 
   return font_size;
+}
+#else
+void TextRecResult::SaveToImg(const std::string& save_path) {
+  INFOW(
+      "OpenCV was not compiled with the freetype module (opencv_freetype), rec "
+      "image will be not saved.");
+}
+#endif
+void TextRecResult::Print() const {
+  std::cout << "{\n  \"res\": {" << std::endl;
+
+  std::cout << "    \"input_path\": {" << predictor_result_.input_path << " },"
+            << std::endl;
+  std::cout << "    \"rec_text\": {" << predictor_result_.rec_text << " }"
+            << std::endl;
+  std::cout << "    \"rec_score\": {" << predictor_result_.rec_score << " }"
+            << std::endl;
+  std::cout << "}" << std::endl;
+}
+
+void TextRecResult::SaveToJson(const std::string& save_path) const {
+  nlohmann::ordered_json j;
+
+  j["input_path"] = predictor_result_.input_path;
+  j["page_index"] = nlohmann::json::value_t::null;//********
+
+  j["rec_text"] = predictor_result_.rec_text;
+  j["rec_score"] = predictor_result_.rec_score;
+
+  auto full_path = Utility::SmartCreateDirectoryForJson(
+      save_path, predictor_result_.input_path);
+  if (!full_path.ok()) {
+    INFOE(full_path.status().ToString().c_str());
+  }
+  std::ofstream file(full_path.value());
+  if (file.is_open()) {
+    file << j.dump(4);
+    file.close();
+  } else {
+    INFOE("Could not open file for writing: %s", save_path.c_str());
+  }
 }

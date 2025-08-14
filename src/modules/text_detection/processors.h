@@ -16,12 +16,12 @@
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <polyclipping/clipper.hpp>
 #include <string>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "polyclipping/clipper.hpp"
 #include "src/utils/func_register.h"
 
 struct DetResizeForTestParam {
@@ -36,8 +36,7 @@ class DetResizeForTest : public BaseProcessor {
  public:
   DetResizeForTest(int resize_long = -1, std::vector<int> input_shape = {},
                    std::vector<int> image_shape = {}, int limit_side_len = 960,
-                   std::string limit_type = std::string("max"),
-                   int max_side_limit = 4000);
+                   std::string limit_type = "max", int max_side_limit = 4000);
 
   absl::StatusOr<std::vector<cv::Mat>> Apply(
       std::vector<cv::Mat>& input,

@@ -26,6 +26,7 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <io.h>
 #define mkdir _mkdir
 static const char PATH_SEPARATOR = '\\';
 #else
@@ -69,6 +70,7 @@ class Utility {
   static absl::Status MyCreateDirectory(const std::string& path);
   static absl::Status MyCreatePath(const std::string& path);
   static absl::Status MyCreateFile(const std::string& filepath);
+
   static absl::StatusOr<std::vector<cv::Mat>> SplitBatch(const cv::Mat& batch);
 
   static absl::StatusOr<cv::Mat> MyLoadImage(const std::string& file_path);
@@ -90,6 +92,6 @@ class Utility {
 
   static absl::StatusOr<int> StringToInt(std::string s);
 
-  static absl::StatusOr<std::pair<std::string, std::string>> GetOcrModelNames(std::string lang = "",std::string ppocr_version = "");
-
+  static absl::StatusOr<std::tuple<std::string, std::string, std::string>>
+  GetOcrModelInfo(std::string lang, std::string ppocr_version);
 };

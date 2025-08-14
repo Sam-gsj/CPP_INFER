@@ -15,6 +15,7 @@
 #include "pipeline.h"
 
 #include "result.h"
+#include "src/utils/args.h"
 _OCRPipeline::_OCRPipeline(const std::string& model_dir,
                            const OCRPipelineParams& params)
     : BasePipeline(model_dir), params_(params), config_(params.config) {
@@ -26,6 +27,7 @@ _OCRPipeline::_OCRPipeline(const std::string& model_dir,
     }
     config_ = YamlConfig(config_path.value());
   }
+  OverrideConfig();
   auto result_use_doc_preprocessor =
       config_.GetBool("use_doc_preprocessor", true);
   if (!result_use_doc_preprocessor.ok()) {
@@ -367,7 +369,7 @@ std::vector<std::unique_ptr<BaseCVResult>> _OCRPipeline::Predict(
           sorted_subs_of_img.push_back(all_subs_of_img[item.first]);
         }
         text_rec_model_->Predict(sorted_subs_of_img);
-        cv::imwrite("num_1,.jpg", sorted_subs_of_img[0]);
+        // cv::imwrite("num_1,.jpg", sorted_subs_of_img[0]);
         auto text_rec_model_results =
             static_cast<TextRecPredictor*>(text_rec_model_.get())
                 ->PredictorResult();
@@ -381,6 +383,7 @@ std::vector<std::unique_ptr<BaseCVResult>> _OCRPipeline::Predict(
             results[l].rec_texts.push_back(rec_res.rec_text);
             results[l].rec_scores.push_back(rec_res.rec_score);
             results[l].rec_polys.push_back(dt_polys_list[l][sno]);
+            results[l].vis_fonts = rec_res.vis_font;
           }
         }
       }
@@ -434,4 +437,243 @@ std::vector<std::unique_ptr<BaseCVResult>> OCRPipeline::Predict(
                    std::make_move_iterator(infer_data_result.value().end()));
   }
   return results;
+}
+
+
+
+void _OCRPipeline::OverrideConfig(){
+  auto& data = config_.Data();
+  if(!FLAGS_doc_orientation_classify_model_name.empty()){
+    auto it = config_.FindKey("DocOrientationClassify.model_name");
+    if(!it.ok()){
+      data["SubPipelines.DocPreprocessor.SubModules.DocOrientationClassify.model_name"] = FLAGS_doc_orientation_classify_model_name;
+    }else{
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_doc_orientation_classify_model_name;
+    }
+  }  
+  if(!FLAGS_doc_orientation_classify_model_dir.empty()){
+    auto it = config_.FindKey("DocOrientationClassify.model_dir");
+    if(!it.ok()){
+      data["SubPipelines.DocPreprocessor.SubModules.DocOrientationClassify.model_dir"] = FLAGS_doc_orientation_classify_model_dir;
+    }else{
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_doc_orientation_classify_model_dir;
+    }
+  }
+  if(!FLAGS_doc_unwarping_model_name.empty()){
+    auto it = config_.FindKey("DocUnwarping.model_name");
+    if(!it.ok()){
+      data["SubPipelines.DocPreprocessor.SubModules.DocUnwarping.model_name"] = FLAGS_doc_unwarping_model_name;
+    }else{
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_doc_unwarping_model_name;
+    }
+  }
+  if(!FLAGS_doc_unwarping_model_dir.empty()){
+    auto it = config_.FindKey("DocUnwarping.model_dir");
+    if(!it.ok()){
+      data["SubPipelines.DocPreprocessor.SubModules.DocUnwarping.model_dir"] = FLAGS_doc_unwarping_model_dir;
+    }else{
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_doc_unwarping_model_dir;
+    }
+  }
+  if(!FLAGS_text_detection_model_name.empty()){
+    auto it = config_.FindKey("TextDetection.model_name");
+    if(!it.ok()){
+      data["SubModules.TextDetection.model_name"] = FLAGS_text_detection_model_name;
+    }else{
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_detection_model_name;
+    }
+  }    
+  if(!FLAGS_text_detection_model_dir.empty()){
+    auto it = config_.FindKey("TextDetection.model_dir");
+    if(!it.ok()){
+      data["SubModules.TextDetection.model_dir"] = FLAGS_text_detection_model_dir;
+    }else{    
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_detection_model_dir;
+    }
+  }
+  if(!FLAGS_textline_orientation_model_name.empty()){
+    auto it = config_.FindKey("TextLineOrientation.model_name");
+    if(!it.ok()){
+      data["SubModules.TextLineOrientation.model_name"] = FLAGS_textline_orientation_model_name;
+    }else{       
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_textline_orientation_model_name;
+    }
+  }
+  if(!FLAGS_textline_orientation_model_dir.empty()){
+    auto it = config_.FindKey("TextLineOrientation.model_dir");
+    if(!it.ok()){
+      data["SubModules.TextLineOrientation.model_dir"] = FLAGS_textline_orientation_model_dir;
+    }else{      
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_textline_orientation_model_dir;
+    }
+  }
+  if(!FLAGS_textline_orientation_batch_size.empty()){
+    auto it = config_.FindKey("TextLineOrientation.batch_size");
+    if(!it.ok()){
+      data["SubModules.TextLineOrientation.batch_size"] = FLAGS_textline_orientation_batch_size;
+    }else{      
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_textline_orientation_batch_size;
+    }
+  }        
+  
+  if(!FLAGS_text_recognition_model_name.empty()){
+    auto it = config_.FindKey("TextRecognition.model_name");
+    if(!it.ok()){
+      data["SubModules.TextRecognition.model_name"] = FLAGS_text_recognition_model_name;
+    }else{     
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_recognition_model_name;
+    }
+  }    
+  if(!FLAGS_text_recognition_model_dir.empty()){
+    auto it = config_.FindKey("TextRecognition.model_dir");
+    if(!it.ok()){
+      data["SubModules.TextRecognition.model_dir"] = FLAGS_text_recognition_model_dir;
+    }else{         
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_recognition_model_dir;
+    }
+  }   
+  if(!FLAGS_text_recognition_batch_size.empty()){
+    auto it = config_.FindKey("TextRecognition.batch_size");
+    if(!it.ok()){
+      data["SubModules.TextRecognition.batch_size"] = FLAGS_text_recognition_batch_size;
+    }else{         
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_recognition_batch_size;
+    }
+  }    
+
+  if(!FLAGS_use_doc_orientation_classify.empty()){
+    auto it = config_.FindKey("DocPreprocessor.use_doc_orientation_classify");
+    if(!it.ok()){
+      data["SubPipelines.DocPreprocessor.use_doc_orientation_classify"] = FLAGS_use_doc_orientation_classify;
+    }else{        
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_use_doc_orientation_classify;
+    }
+  }    
+  if(!FLAGS_use_doc_unwarping.empty()){
+    auto it = config_.FindKey("DocPreprocessor.use_doc_unwarping");
+    if(!it.ok()){
+      data["SubPipelines.DocPreprocessor.use_doc_unwarping"] = FLAGS_use_doc_unwarping;
+    }else{     
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_use_doc_unwarping;
+    }
+  }    
+  if(!FLAGS_use_textline_orientation.empty()){
+    auto it = config_.FindKey("use_textline_orientation");
+    if(!it.ok()){
+      data["use_textline_orientation"] = FLAGS_use_textline_orientation;
+    }else{      
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_use_textline_orientation;
+    }
+  }    
+  if(!FLAGS_text_det_limit_side_len.empty()){
+    auto it = config_.FindKey("TextDetection.limit_side_len");
+    if(!it.ok()){
+      data["SubModules.TextDetection.limit_side_len"] = FLAGS_text_det_limit_side_len;
+    }else{    
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_det_limit_side_len;
+    }
+  }   
+  if(!FLAGS_text_det_limit_type.empty()){
+    auto it = config_.FindKey("TextDetection.limit_type");
+    if(!it.ok()){
+      data["SubModules.TextDetection.limit_type"] = FLAGS_text_det_limit_type;
+    }else{     
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_det_limit_type;
+    }
+  }    
+  if(!FLAGS_text_det_thresh.empty()){
+    auto it = config_.FindKey("TextDetection.thresh");
+    if(!it.ok()){
+      data["SubModules.TextDetection.thresh"] = FLAGS_text_det_thresh;
+    }else{   
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_det_thresh;
+    }
+  } 
+  if(!FLAGS_text_det_box_thresh.empty()){
+    auto it = config_.FindKey("TextDetection.box_thresh");
+    if(!it.ok()){
+      data["SubModules.TextDetection.box_thresh"] = FLAGS_text_det_box_thresh;
+    }else{      
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_det_box_thresh;
+    }
+  }    
+  if(!FLAGS_text_det_unclip_ratio.empty()){
+    auto it = config_.FindKey("TextDetection.unclip_ratio");
+    if(!it.ok()){
+      data["SubModules.TextDetection.unclip_ratio"] = FLAGS_text_det_unclip_ratio;
+    }else{      
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_det_unclip_ratio;
+    }
+  }   
+  if(!FLAGS_text_det_input_shape.empty()){
+    auto it = config_.FindKey("TextDetection.input_shape");
+    if(!it.ok()){
+      data["SubModules.TextDetection.input_shape"] = FLAGS_text_det_input_shape;
+    }else{      
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_det_input_shape;
+    }
+  }    
+  if(!FLAGS_text_rec_score_thresh.empty()){
+    auto it = config_.FindKey("TextRecognition.score_thresh");
+    if(!it.ok()){
+      data["SubModules.TextRecognition.score_thresh"] = FLAGS_text_rec_score_thresh;
+    }else{     
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_rec_score_thresh;
+    }
+  }          
+  if(!FLAGS_text_rec_input_shape.empty()){
+    auto it = config_.FindKey("TextRecognition.input_shape");
+    if(!it.ok()){
+      data["SubModules.TextRecognition.input_shape"] = FLAGS_text_rec_input_shape;
+    }else{     
+      auto key = it.value().first;
+      data.erase(data.find(key));
+      data[key]= FLAGS_text_rec_input_shape;
+    }
+  }     
+
 }
